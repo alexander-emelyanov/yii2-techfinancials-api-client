@@ -46,9 +46,9 @@ class TechFinancialsClient
         return true;
     }
 
-    public function __descruct(){
+    public function __destruct(){
         if ($this->socket){
-            socket_close($this->socket);
+            fclose($this->socket);
         }
     }
 
@@ -63,31 +63,45 @@ class TechFinancialsClient
         $in = "A,". intval($data[2]) . "," . intval($data[1]) . "," . trim($username) . "," . trim($password) . static::STRING_END . "\r\n";
         $data = $this->readFromSocket($in);
 
-        if (strlen($data[5]) < 1){
+
+
+        if (!(strlen($data[5]) < 1)){
+            $in = "MS,". intval($data[2]) . "," . intval($data[5]) . static::STRING_END . "\r\n";
+            $data = $this->readFromSocket($in);
+        }
+        else
+        {
             return false;
         }
-
+         
         return $data;
+
     }
 
     private function openSocket(){
-        // Create TCP socket
-        if (($this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)) === false) {
-            throw new CException("Call socket_create() failed. Reason: " . socket_strerror(socket_last_error()));
+
+        $this->socket = fsockopen($this->apiUrl, $this->apiPort, $errno, $errstr);
+        if (!$this->socket) {
+            throw new CException("Socket failed. Reason: " . $errstr);
         }
-        // Connect to remote server
-        if (socket_connect($this->socket, $this->apiUrl, $this->apiPort) === false) {
-            throw new CException("Call socket_connect() failed. Reason: " . socket_strerror(socket_last_error($this->socket)));
-        }
+
     }
+
 
     private function readFromSocket($in){
-        socket_write($this->socket, $in, strlen($in));
-        $response = '';
-        while ($out = socket_read($this->socket, 1, PHP_NORMAL_READ)) {
-            $response .= $out;
-        }
-        return explode(",", $response);;
-    }
+        fwrite($this->socket, $in);
+        while($this->socket)
+        {
+            $response = fgets($this->socket, 1024);
+            $messages = explode(";", $response);
+            foreach ($messages as $message) {
+                $parted=explode(",", $message);
+                if($parted[0]=="OR") return $parted;
+                if($parted[0]=="R") return $parted;
+            }
 
+        }
+
+    }
+ 
 }
