@@ -65,22 +65,17 @@ class TechFinancialsClient
 
 
 
-        if (!(strlen($data[5]) < 1)){
-            $in = "MS,". intval($data[2]) . "," . intval($data[5]) . static::STRING_END . "\r\n";
+        if (!(strlen($data[4]) < 1)){
+            $in = "MS,". intval($data[1]) . "," . $data[4] . static::STRING_END . "\r\n";
             $data = $this->readFromSocket($in);
         }
-        else
-        {
-            return false;
-        }
-         
         return $data;
 
     }
 
     private function openSocket(){
 
-        $this->socket = fsockopen($this->apiUrl, $this->apiPort, $errno, $errstr);
+        $this->socket = fsockopen("ssl://46.166.130.213", 7777, $errno, $errstr);
         if (!$this->socket) {
             throw new CException("Socket failed. Reason: " . $errstr);
         }
@@ -88,16 +83,22 @@ class TechFinancialsClient
     }
 
 
-    private function readFromSocket($in){
+    private function readFromSocket($in, $debug=false){
         fwrite($this->socket, $in);
         while($this->socket)
         {
-            $response = fgets($this->socket, 1024);
+            $response = fgets($this->socket, 10240);
             $messages = explode(";", $response);
+            if($debug)
+            {
+                return $messages;
+            }
             foreach ($messages as $message) {
                 $parted=explode(",", $message);
                 if($parted[0]=="OR") return $parted;
                 if($parted[0]=="R") return $parted;
+                if($parted[0]=="MR") return $parted;
+
             }
 
         }
