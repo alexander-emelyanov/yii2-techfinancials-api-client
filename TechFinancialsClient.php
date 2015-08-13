@@ -69,7 +69,19 @@ class TechFinancialsClient
             $in = "MS,". intval($data[1]) . "," . $data[4] . static::STRING_END . "\r\n";
             $data = $this->readFromSocket($in);
         }
-        return $data;
+        else
+        {
+            return ["status"=>false, "message"=>"User auth failure"];
+        }
+        
+        if ($data[3]==0)
+        {
+            return ["status"=>true, "currency"=>$data[5], "balance"=>$data[6], "message"=>"OK"];
+        }
+        else
+        {
+            return ["status"=>false, "message"=>"Balance Request Failure"];
+        }
 
     }
 
